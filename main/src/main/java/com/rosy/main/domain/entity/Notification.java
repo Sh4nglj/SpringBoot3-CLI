@@ -5,7 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @TableName("sys_notification")
@@ -30,7 +30,7 @@ public class Notification implements Serializable {
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+    private Date createTime;
 
-    private LocalDateTime readTime;
+    private Date readTime;
 }

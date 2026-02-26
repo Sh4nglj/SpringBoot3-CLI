@@ -5,7 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @TableName("repair_order")
@@ -37,25 +37,25 @@ public class RepairOrder implements Serializable {
 
     private Long assigneeId;
 
-    private LocalDateTime assignedTime;
+    private Date assignedTime;
 
-    private LocalDateTime startedTime;
+    private Date startedTime;
 
-    private LocalDateTime completedTime;
+    private Date completedTime;
 
     private String repairResult;
 
     @TableField(fill = FieldFill.INSERT)
-    private Long creatorId;
+    private Long createBy;
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
+    private Date createTime;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Long updaterId;
+    private Long updateBy;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
+    private Date updateTime;
 
     @Version
     private Byte version;

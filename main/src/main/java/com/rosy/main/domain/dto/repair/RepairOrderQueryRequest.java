@@ -28,7 +28,7 @@ public class RepairOrderQueryRequest extends PageRequest implements Serializable
 
     private Integer priority;
 
-    private Long creatorId;
+    private Long createBy;
 
     private Long assigneeId;
 }

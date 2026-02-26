@@ -24,9 +24,12 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -68,7 +71,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         }
         repairOrder.setAssigneeId(assigneeId);
         repairOrder.setAssignmentMethod(AssignmentMethodEnum.AUTO.getValue());
-        repairOrder.setAssignedTime(LocalDateTime.now());
+        repairOrder.setAssignedTime(new Date());
         return this.updateById(repairOrder);
     }
 
@@ -84,7 +87,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         }
         repairOrder.setAssigneeId(assigneeId);
         repairOrder.setAssignmentMethod(AssignmentMethodEnum.MANUAL.getValue());
-        repairOrder.setAssignedTime(LocalDateTime.now());
+        repairOrder.setAssignedTime(new Date());
         return this.updateById(repairOrder);
     }
 
@@ -102,7 +105,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "请先分配工单");
         }
         repairOrder.setStatus(RepairOrderStatusEnum.IN_PROGRESS.getValue());
-        repairOrder.setStartedTime(LocalDateTime.now());
+        repairOrder.setStartedTime(new Date());
         return this.updateById(repairOrder);
     }
 
@@ -117,11 +120,11 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "只有维修中状态才能完成");
         }
         repairOrder.setStatus(RepairOrderStatusEnum.COMPLETED.getValue());
-        repairOrder.setCompletedTime(LocalDateTime.now());
+        repairOrder.setCompletedTime(new Date());
         repairOrder.setRepairResult(repairResult);
         boolean result = this.updateById(repairOrder);
-        if (result && repairOrder.getCreatorId() != null) {
-            notificationService.sendRepairCompletedNotification(repairOrder.getCreatorId(), id, repairResult);
+        if (result && repairOrder.getCreateBy() != null) {
+            notificationService.sendRepairCompletedNotification(repairOrder.getCreateBy(), id, repairResult);
         }
         return result;
     }
@@ -181,7 +184,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         QueryWrapperUtil.addCondition(queryWrapper, request.getFaultType(), RepairOrder::getFaultType);
         QueryWrapperUtil.addCondition(queryWrapper, request.getStatus(), RepairOrder::getStatus);
         QueryWrapperUtil.addCondition(queryWrapper, request.getPriority(), RepairOrder::getPriority);
-        QueryWrapperUtil.addCondition(queryWrapper, request.getCreatorId(), RepairOrder::getCreatorId);
+        QueryWrapperUtil.addCondition(queryWrapper, request.getCreateBy(), RepairOrder::getCreateBy);
         QueryWrapperUtil.addCondition(queryWrapper, request.getAssigneeId(), RepairOrder::getAssigneeId);
         QueryWrapperUtil.addSortCondition(queryWrapper,
                 request.getSortField(),
@@ -195,6 +198,31 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     }
 
     private Long findAvailableAssignee() {
+        List<Integer> pendingStatusList = Arrays.asList(
+            RepairOrderStatusEnum.PENDING.getValue(),
+            RepairOrderStatusEnum.IN_PROGRESS.getValue()
+        );
+        List<Map<String, Object>> assigneeWorkload = baseMapper.countPendingOrdersByAssignee(pendingStatusList);
+        
+        if (assigneeWorkload == null || assigneeWorkload.isEmpty()) {
+            return getDefaultAssignee();
+        }
+        
+        Object assigneeIdObj = assigneeWorkload.get(0).get("assigneeId");
+        if (assigneeIdObj == null) {
+            return getDefaultAssignee();
+        }
+        if (assigneeIdObj instanceof Long) {
+            return (Long) assigneeIdObj;
+        } else if (assigneeIdObj instanceof Integer) {
+            return ((Integer) assigneeIdObj).longValue();
+        } else if (assigneeIdObj instanceof BigDecimal) {
+            return ((BigDecimal) assigneeIdObj).longValue();
+        }
+        return Long.valueOf(assigneeIdObj.toString());
+    }
+
+    private Long getDefaultAssignee() {
         return 1L;
     }
 }

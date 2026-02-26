@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 public class RepairOrderVO implements Serializable {
@@ -44,19 +44,19 @@ public class RepairOrderVO implements Serializable {
 
     private Long assigneeId;
 
-    private LocalDateTime assignedTime;
+    private Date assignedTime;
 
-    private LocalDateTime startedTime;
+    private Date startedTime;
 
-    private LocalDateTime completedTime;
+    private Date completedTime;
 
     private String repairResult;
 
-    private Long creatorId;
+    private Long createBy;
 
-    private LocalDateTime createTime;
+    private Date createTime;
 
-    private Long updaterId;
+    private Long updateBy;
 
-    private LocalDateTime updateTime;
+    private Date updateTime;
 }
