@@ -16,6 +16,40 @@ import org.springframework.stereotype.Service;
 public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Notification> implements INotificationService {
 
     @Override
+    public void sendAssignNotification(Long orderId, Long repairerId, String orderNo, String deviceType) {
+        Notification notification = new Notification();
+        notification.setUserId(repairerId);
+        notification.setOrderId(orderId);
+        notification.setTitle("新工单分配通知");
+        notification.setContent("您有新的报修工单[" + orderNo + "]待处理，设备类型：" + deviceType + "，请及时接单。");
+        notification.setType(NotificationTypeEnum.SITE_MESSAGE.getCode());
+        notification.setIsRead((byte) 0);
+        boolean result = this.save(notification);
+        if (!result) {
+            log.error("发送工单分配通知失败，orderId: {}, repairerId: {}", orderId, repairerId);
+        } else {
+            log.info("发送工单分配通知成功，orderId: {}, repairerId: {}", orderId, repairerId);
+        }
+    }
+
+    @Override
+    public void sendAcceptNotification(Long orderId, Long userId, String orderNo, String repairerName) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setOrderId(orderId);
+        notification.setTitle("工单接单通知");
+        notification.setContent("您的报修工单[" + orderNo + "]已被维修人员[" + repairerName + "]接单，即将开始维修。");
+        notification.setType(NotificationTypeEnum.SITE_MESSAGE.getCode());
+        notification.setIsRead((byte) 0);
+        boolean result = this.save(notification);
+        if (!result) {
+            log.error("发送接单通知失败，orderId: {}, userId: {}", orderId, userId);
+        } else {
+            log.info("发送接单通知成功，orderId: {}, userId: {}", orderId, userId);
+        }
+    }
+
+    @Override
     public void sendRepairCompleteNotification(Long orderId, Long userId, String orderNo) {
         Notification notification = new Notification();
         notification.setUserId(userId);
@@ -27,8 +61,9 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         boolean result = this.save(notification);
         if (!result) {
             log.error("发送维修完成通知失败，orderId: {}, userId: {}", orderId, userId);
+        } else {
+            log.info("发送维修完成通知成功，orderId: {}, userId: {}", orderId, userId);
         }
-        log.info("发送维修完成通知成功，orderId: {}, userId: {}", orderId, userId);
     }
 
     @Override

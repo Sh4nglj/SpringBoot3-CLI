@@ -13,6 +13,7 @@ import com.rosy.common.utils.ThrowUtils;
 import com.rosy.main.domain.dto.repair.RepairOrderAcceptRequest;
 import com.rosy.main.domain.dto.repair.RepairOrderAddRequest;
 import com.rosy.main.domain.dto.repair.RepairOrderAssignRequest;
+import com.rosy.main.domain.dto.repair.RepairOrderCompleteRequest;
 import com.rosy.main.domain.dto.repair.RepairOrderQueryRequest;
 import com.rosy.main.domain.entity.RepairOrder;
 import com.rosy.main.domain.vo.RepairOrderVO;
@@ -20,6 +21,7 @@ import com.rosy.main.enums.RepairOrderPriorityEnum;
 import com.rosy.main.enums.RepairOrderStatusEnum;
 import com.rosy.main.service.IRepairOrderService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,11 +33,14 @@ public class RepairOrderController {
 
     @PostMapping("/add")
     @ValidateRequest
-    public ApiResponse addOrder(@RequestBody RepairOrderAddRequest addRequest) {
+    public ApiResponse addOrder(@RequestBody RepairOrderAddRequest addRequest, HttpServletRequest request) {
         RepairOrder order = BeanUtil.copyProperties(addRequest, RepairOrder.class);
         order.setOrderNo(repairOrderService.generateOrderNo());
         order.setStatus(RepairOrderStatusEnum.PENDING.getCode());
         order.setPriority(RepairOrderPriorityEnum.MEDIUM.getCode());
+        if (addRequest.getUserId() == null) {
+            order.setUserId(1L);
+        }
         if (addRequest.getFaultImages() != null && !addRequest.getFaultImages().isEmpty()) {
             order.setFaultImages(JSON.toJSONString(addRequest.getFaultImages()));
         }
@@ -61,29 +66,27 @@ public class RepairOrderController {
     @PostMapping("/auto-assign")
     @ValidateRequest
     public ApiResponse autoAssignOrder(@RequestBody IdRequest idRequest) {
-        RepairOrder order = repairOrderService.getById(idRequest.getId());
-        if (order == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "工单不存在");
-        }
-        RepairOrderAssignRequest assignRequest = new RepairOrderAssignRequest();
-        assignRequest.setOrderId(idRequest.getId());
-        assignRequest.setRepairerId(1L);
-        assignRequest.setPriority(order.getPriority() != null ? order.getPriority() : RepairOrderPriorityEnum.MEDIUM.getCode());
-        repairOrderService.assignOrder(assignRequest, true);
+        repairOrderService.autoAssignOrder(idRequest.getId());
         return ApiResponse.success(true);
     }
 
     @PostMapping("/accept")
     @ValidateRequest
-    public ApiResponse acceptOrder(@RequestBody RepairOrderAcceptRequest acceptRequest) {
-        repairOrderService.acceptOrder(acceptRequest.getOrderId(), 1L);
+    public ApiResponse acceptOrder(@RequestBody RepairOrderAcceptRequest acceptRequest, HttpServletRequest request) {
+        Long repairerId = 1L;
+        repairOrderService.acceptOrder(acceptRequest.getOrderId(), repairerId);
         return ApiResponse.success(true);
     }
 
     @PostMapping("/complete")
     @ValidateRequest
-    public ApiResponse completeOrder(@RequestBody IdRequest idRequest) {
-        repairOrderService.completeOrder(idRequest.getId());
+    public ApiResponse completeOrder(@RequestBody RepairOrderCompleteRequest completeRequest) {
+        repairOrderService.completeOrderWithResult(
+                completeRequest.getOrderId(),
+                completeRequest.getRepairResult(),
+                completeRequest.getRepairImages(),
+                completeRequest.getRepairCost()
+        );
         return ApiResponse.success(true);
     }
 

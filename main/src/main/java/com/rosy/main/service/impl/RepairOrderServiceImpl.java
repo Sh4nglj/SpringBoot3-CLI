@@ -13,7 +13,7 @@ import com.rosy.main.domain.dto.repair.RepairOrderAssignRequest;
 import com.rosy.main.domain.dto.repair.RepairOrderQueryRequest;
 import com.rosy.main.domain.entity.RepairEvaluation;
 import com.rosy.main.domain.entity.RepairOrder;
-import com.rosy.main.domain.vo.RepairEvaluationVO;
+import com.rosy.main.domain.entity.Repairer;
 import com.rosy.main.domain.vo.RepairOrderVO;
 import com.rosy.main.enums.AssignTypeEnum;
 import com.rosy.main.enums.RepairOrderPriorityEnum;
@@ -22,22 +22,27 @@ import com.rosy.main.mapper.RepairOrderMapper;
 import com.rosy.main.service.INotificationService;
 import com.rosy.main.service.IRepairEvaluationService;
 import com.rosy.main.service.IRepairOrderService;
+import com.rosy.main.service.IRepairerService;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
+import java.util.List;
 
 @Service
 public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, RepairOrder> implements IRepairOrderService {
 
     private final IRepairEvaluationService repairEvaluationService;
     private final INotificationService notificationService;
+    private final IRepairerService repairerService;
 
     public RepairOrderServiceImpl(IRepairEvaluationService repairEvaluationService,
-                                   INotificationService notificationService) {
+                                   INotificationService notificationService,
+                                   IRepairerService repairerService) {
         this.repairEvaluationService = repairEvaluationService;
         this.notificationService = notificationService;
+        this.repairerService = repairerService;
     }
 
     @Override
@@ -60,6 +65,15 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         }
         if (repairOrder.getFaultImages() != null) {
             vo.setFaultImages(JSON.parseArray(repairOrder.getFaultImages(), String.class));
+        }
+        if (repairOrder.getRepairImages() != null) {
+            vo.setRepairImages(JSON.parseArray(repairOrder.getRepairImages(), String.class));
+        }
+        if (repairOrder.getRepairerId() != null) {
+            Repairer repairer = repairerService.getById(repairOrder.getRepairerId());
+            if (repairer != null) {
+                vo.setRepairerName(repairer.getRepairerName());
+            }
         }
         RepairEvaluation evaluation = repairEvaluationService.getByOrderId(repairOrder.getId());
         if (evaluation != null) {
@@ -116,6 +130,27 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "分配工单失败");
         }
+        notificationService.sendAssignNotification(orderId, assignRequest.getRepairerId(), order.getOrderNo(), order.getDeviceType());
+    }
+
+    @Override
+    public void autoAssignOrder(Long orderId) {
+        RepairOrder order = this.getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "工单不存在");
+        }
+        if (!RepairOrderStatusEnum.PENDING.getCode().equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "工单状态不允许分配");
+        }
+        Repairer repairer = repairerService.findBestAvailableRepairer(order.getDeviceType());
+        if (repairer == null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "暂无可用维修人员");
+        }
+        RepairOrderAssignRequest assignRequest = new RepairOrderAssignRequest();
+        assignRequest.setOrderId(orderId);
+        assignRequest.setRepairerId(repairer.getId());
+        assignRequest.setPriority(order.getPriority() != null ? order.getPriority() : RepairOrderPriorityEnum.MEDIUM.getCode());
+        assignOrder(assignRequest, true);
     }
 
     @Override
@@ -138,10 +173,14 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "接单失败");
         }
+        repairerService.incrementWorkload(repairerId);
+        Repairer repairer = repairerService.getById(repairerId);
+        String repairerName = repairer != null ? repairer.getRepairerName() : "维修人员";
+        notificationService.sendAcceptNotification(orderId, order.getUserId(), order.getOrderNo(), repairerName);
     }
 
     @Override
-    public void completeOrder(Long orderId) {
+    public void completeOrderWithResult(Long orderId, String repairResult, List<String> repairImages, BigDecimal repairCost) {
         RepairOrder order = this.getById(orderId);
         if (order == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "工单不存在");
@@ -152,10 +191,18 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         LambdaUpdateWrapper<RepairOrder> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(RepairOrder::getId, orderId)
                 .set(RepairOrder::getStatus, RepairOrderStatusEnum.COMPLETED.getCode())
-                .set(RepairOrder::getCompleteTime, LocalDateTime.now());
+                .set(RepairOrder::getCompleteTime, LocalDateTime.now())
+                .set(RepairOrder::getRepairResult, repairResult)
+                .set(RepairOrder::getRepairCost, repairCost);
+        if (repairImages != null && !repairImages.isEmpty()) {
+            updateWrapper.set(RepairOrder::getRepairImages, JSON.toJSONString(repairImages));
+        }
         boolean result = this.update(updateWrapper);
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "完成工单失败");
+        }
+        if (order.getRepairerId() != null) {
+            repairerService.decrementWorkload(order.getRepairerId());
         }
         notificationService.sendRepairCompleteNotification(orderId, order.getUserId(), order.getOrderNo());
     }
@@ -169,12 +216,16 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         if (RepairOrderStatusEnum.COMPLETED.getCode().equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "已完成的工单不能取消");
         }
+        boolean wasInProgress = RepairOrderStatusEnum.IN_PROGRESS.getCode().equals(order.getStatus());
         LambdaUpdateWrapper<RepairOrder> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(RepairOrder::getId, orderId)
                 .set(RepairOrder::getStatus, RepairOrderStatusEnum.CANCELLED.getCode());
         boolean result = this.update(updateWrapper);
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "取消工单失败");
+        }
+        if (wasInProgress && order.getRepairerId() != null) {
+            repairerService.decrementWorkload(order.getRepairerId());
         }
     }
 }

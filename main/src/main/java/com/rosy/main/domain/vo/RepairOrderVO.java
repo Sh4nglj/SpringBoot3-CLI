@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -54,6 +55,12 @@ public class RepairOrderVO implements Serializable {
     private String userName;
 
     private String userPhone;
+
+    private String repairResult;
+
+    private List<String> repairImages;
+
+    private BigDecimal repairCost;
 
     private LocalDateTime createTime;
 

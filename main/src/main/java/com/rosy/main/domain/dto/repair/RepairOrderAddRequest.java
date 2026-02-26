@@ -1,6 +1,7 @@
 package com.rosy.main.domain.dto.repair;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -13,6 +14,9 @@ public class RepairOrderAddRequest implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    @Positive(message = "用户ID必须为正数")
+    private Long userId;
 
     @NotBlank(message = "设备类型不能为空")
     @Size(max = 100, message = "设备类型长度不能超过100个字符")

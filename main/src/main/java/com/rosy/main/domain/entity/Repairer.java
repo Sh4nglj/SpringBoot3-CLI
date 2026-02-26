@@ -5,12 +5,11 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("repair_order")
-public class RepairOrder implements Serializable {
+@TableName("repairer")
+public class Repairer implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -18,41 +17,19 @@ public class RepairOrder implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    private String orderNo;
-
-    private String deviceType;
-
-    private String deviceLocation;
-
-    private String faultType;
-
-    private String faultDescription;
-
-    private String faultImages;
-
-    private Byte status;
-
-    private Byte priority;
-
-    private Byte assignType;
-
-    private Long repairerId;
-
-    private LocalDateTime assignTime;
-
-    private LocalDateTime acceptTime;
-
-    private LocalDateTime completeTime;
-
     private Long userId;
 
-    private String userPhone;
+    private String repairerName;
 
-    private String repairResult;
+    private String phone;
 
-    private String repairImages;
+    private String specialty;
 
-    private BigDecimal repairCost;
+    private Integer workload;
+
+    private Integer maxWorkload;
+
+    private Byte status;
 
     @TableField(fill = FieldFill.INSERT)
     private Long creatorId;
