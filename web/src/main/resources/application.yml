@@ -59,6 +59,11 @@ mybatis-plus:
 path:
   file-upload-path: xxx
 
+file:
+  upload:
+    path: ./uploads
+    url-prefix: http://localhost:8080/uploads
+
 springdoc:
   api-docs:
     path: /v3/api-docs  # 配置 OpenAPI 文档的路径
