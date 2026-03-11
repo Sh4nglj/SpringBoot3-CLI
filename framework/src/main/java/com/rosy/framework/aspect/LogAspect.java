@@ -35,7 +35,9 @@ public class LogAspect {
         String url = httpServletRequest.getRequestURI();
         // 获取请求参数
         Object[] args = point.getArgs();
-        String reqParam = "[" + String.join(", ", Arrays.stream(args).map(Object::toString).toArray(String[]::new)) + "]";
+        String reqParam = "[" + String.join(", ", Arrays.stream(args)
+                .map(arg -> arg == null ? "null" : arg.toString())
+                .toArray(String[]::new)) + "]";
         // 输出请求日志
         log.info("request start，id: {}, path: {}, ip: {}, params: {}", requestId, url,
                 httpServletRequest.getRemoteHost(), reqParam);

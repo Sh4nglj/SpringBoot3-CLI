@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rosy.main.mapper.RepairOrderMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.rosy.main.domain.entity.RepairOrder">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="user_id" property="userId"/>
+        <result column="device_type" property="deviceType"/>
+        <result column="device_location" property="deviceLocation"/>
+        <result column="fault_type" property="faultType"/>
+        <result column="description" property="description"/>
+        <result column="photos" property="photos"/>
+        <result column="priority" property="priority"/>
+        <result column="status" property="status"/>
+        <result column="assignee_id" property="assigneeId"/>
+        <result column="assign_type" property="assignType"/>
+        <result column="assign_time" property="assignTime"/>
+        <result column="accept_time" property="acceptTime"/>
+        <result column="complete_time" property="completeTime"/>
+        <result column="expected_time" property="expectedTime"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="updater_id" property="updaterId"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="version" property="version"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, order_no, user_id, device_type, device_location, fault_type, description, photos, priority, status,
+        assignee_id, assign_type, assign_time, accept_time, complete_time, expected_time,
+        creator_id, create_time, updater_id, update_time, version, is_deleted
+    </sql>
+
+</mapper>

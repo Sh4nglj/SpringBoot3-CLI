@@ -19,6 +19,9 @@ public class QueryWrapperUtil {
      * @param <T>          实体类型
      */
     public static <T> void addCondition(LambdaQueryWrapper<T> queryWrapper, Object value, SFunction<T, ?> column) {
+        if (queryWrapper == null || column == null) {
+            return;
+        }
         if (value != null) {
             queryWrapper.eq(column, value);
         }
@@ -33,6 +36,9 @@ public class QueryWrapperUtil {
      * @param <T>          实体类型
      */
     public static <T> void addLikeCondition(LambdaQueryWrapper<T> queryWrapper, String value, SFunction<T, ?> column) {
+        if (queryWrapper == null || column == null) {
+            return;
+        }
         if (StringUtils.isNotBlank(value)) {
             queryWrapper.like(column, value);
         }
@@ -48,6 +54,9 @@ public class QueryWrapperUtil {
      * @param <T>          实体类型
      */
     public static <T> void addSortCondition(LambdaQueryWrapper<T> queryWrapper, String sortField, String sortOrder, SFunction<T, ?> defaultField) {
+        if (queryWrapper == null || defaultField == null) {
+            return;
+        }
         // 判断排序顺序，默认升序
         boolean isAsc = "asc".equalsIgnoreCase(Optional.ofNullable(sortOrder).orElse("asc"));
 
@@ -76,6 +85,9 @@ public class QueryWrapperUtil {
      * @return 对应的 SFunction
      */
     private static <T> SFunction<T, ?> getFieldByName(String fieldName, SFunction<T, ?> defaultField) {
+        if (StringUtils.isBlank(fieldName) || defaultField == null) {
+            return defaultField;
+        }
         // 示例逻辑：可以根据实际业务实现字段映射
         // 假设字段映射是一个 Map<String, SFunction<T, ?>>
         Map<String, SFunction<T, ?>> fieldMapping = getFieldMapping();
