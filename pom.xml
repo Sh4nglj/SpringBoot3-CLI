@@ -23,8 +23,8 @@
 
     <properties>
         <!--构建配置-->
-        <java.version>18</java.version>
-        <target.java.version>18</target.java.version>
+        <java.version>17</java.version>
+        <target.java.version>17</target.java.version>
         <maven.compiler.source>${target.java.version}</maven.compiler.source>
         <maven.compiler.target>${target.java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
